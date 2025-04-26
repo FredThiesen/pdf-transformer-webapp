@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import UploadPDF from "./components/UploadPDF"
 import GeneratePDF from "./components/GeneratePDF"
 import { PDFDocument } from "pdf-lib"
@@ -10,26 +10,28 @@ function App() {
 		width: number
 		height: number
 	} | null>(null)
+	const [artworkBytes, setArtworkBytes] = useState<Uint8Array | null>(null)
 	const [generating, setGenerating] = useState(false)
+	const [outputPdfUrl, setOutputPdfUrl] = useState<string | null>(null)
+	const [originalPdfUrl, setOriginalPdfUrl] = useState<string | null>(null)
 
-	// Função para extrair a primeira página como imagem (arte) e pegar dimensões
-	const extractFirstPageAsImage = async (
-		file: File
-	): Promise<{
-		bytes: Uint8Array | null
-		width: number
-		height: number
-	} | null> => {
+	useEffect(() => {
+		if (pdfFile && !generating) {
+			console.log("gerando pdf automaticamente")
+			handleGeneratePDF()
+		}
+	}, [artworkBytes, pdfDimensions, pdfFile, generating])
+
+	// ✅ Função corrigida para extrair dimensões sem recriar o PDF
+	const extractFirstPageAsImage = async (file: File) => {
 		try {
 			const bytes = await file.arrayBuffer()
 			const srcPdf = await PDFDocument.load(bytes)
-			const artPdf = await PDFDocument.create()
-			const [firstPage] = await artPdf.copyPages(srcPdf, [0])
-			artPdf.addPage(firstPage)
+			const firstPage = srcPdf.getPage(0)
 			const width = firstPage.getWidth()
 			const height = firstPage.getHeight()
-			const saved = await artPdf.save()
-			return { bytes: saved, width, height }
+
+			return { bytes: new Uint8Array(bytes), width, height }
 		} catch (e) {
 			console.error("Erro ao extrair arte do PDF:", e)
 			alert("Erro ao extrair arte do PDF: " + e)
@@ -43,55 +45,69 @@ function App() {
 		if (file) {
 			const result = await extractFirstPageAsImage(file)
 			if (result) {
+				setArtworkBytes(result.bytes)
 				setPdfDimensions({ width: result.width, height: result.height })
+				// Cria URL para preview do PDF original
+				const url = URL.createObjectURL(file)
+				setOriginalPdfUrl(url)
 			} else {
+				setArtworkBytes(null)
 				setPdfDimensions(null)
+				setOriginalPdfUrl(null)
 			}
 		} else {
+			setArtworkBytes(null)
 			setPdfDimensions(null)
+			setOriginalPdfUrl(null)
 		}
 	}
 
 	// Função para gerar o novo PDF em grade
 	const handleGeneratePDF = async () => {
-		if (!pdfFile || !pdfDimensions) return
+		if (!artworkBytes || !pdfDimensions) return
 		setGenerating(true)
 		try {
-			const artResult = await extractFirstPageAsImage(pdfFile)
-			if (!artResult || !artResult.bytes) {
-				setGenerating(false)
-				return
-			}
 			const { width: artWidth, height: artHeight } = pdfDimensions
 
 			// Página A4 em pontos
 			const a4Width = 595.28
 			const a4Height = 841.89
 
-			const margin = 10 // margem em pontos
+			const margin = 10
+			const paddingY = 10 // espaço em pontos acima e abaixo da arte
+			const paddedArtHeight = artHeight + paddingY * 2
 			const usableWidth = a4Width - margin * 2
 			const usableHeight = a4Height - margin * 2
 			const cols = Math.floor((usableWidth + margin) / (artWidth + margin))
-			const rows = Math.floor((usableHeight + margin) / (artHeight + margin))
+			const rows = Math.floor(
+				(usableHeight + margin) / (paddedArtHeight + margin)
+			)
 
 			const newPdf = await PDFDocument.create()
-			const artPdf = await PDFDocument.load(artResult.bytes)
+			const artPdf = await PDFDocument.load(artworkBytes)
 			const artPage = artPdf.getPage(0)
 			const embeddedPage = await newPdf.embedPage(artPage)
 			const page = newPdf.addPage([a4Width, a4Height])
 
+			const startY = a4Height - margin - paddedArtHeight
+
 			for (let row = 0; row < rows; row++) {
 				for (let col = 0; col < cols; col++) {
 					const x = margin + col * (artWidth + margin)
-					// Novo cálculo: topo da arte exatamente abaixo da margem superior
-					const y = a4Height - margin - artHeight - row * (artHeight + margin)
-					// Se y < margin, não desenhar (evita corte na última linha)
+					const y = startY - row * (paddedArtHeight + margin) + paddingY
 					if (y < margin) continue
+					// Desenha a imagem
 					page.drawPage(embeddedPage, {
 						x,
 						y,
 						xScale: 1,
 						yScale: 1,
+						boundingBox: {
+							left: 0,
+							bottom: 0,
+							right: artWidth,
+							top: artHeight,
+						},
 					})
 				}
 			}
@@ -99,15 +115,12 @@ function App() {
 			const pdfBytes = await newPdf.save()
 			const blob = new Blob([pdfBytes], { type: "application/pdf" })
 			const url = URL.createObjectURL(blob)
-			const a = document.createElement("a")
-			a.href = url
-			a.download = "arte-em-grade.pdf"
-			a.click()
-			URL.revokeObjectURL(url)
-			setGenerating(false)
+			console.log("PDF gerado com sucesso:", url)
+			setOutputPdfUrl(url)
 		} catch (e) {
 			console.error("Erro ao gerar ou baixar o PDF:", e)
 			alert("Erro ao gerar ou baixar o PDF: " + e)
+		} finally {
 			setGenerating(false)
 		}
 	}
@@ -125,10 +138,44 @@ function App() {
 						{pdfDimensions.height.toFixed(0)} pontos
 					</div>
 				)}
+				{originalPdfUrl && pdfDimensions && (
+					<div className="mt-4">
+						<div className="text-xs text-gray-500 mb-1">
+							Pré-visualização do PDF original:
+						</div>
+						<iframe
+							title="Pré-visualização do PDF original"
+							src={originalPdfUrl}
+							style={{
+								width: "100%",
+								height: `${pdfDimensions.height * 1.33 + 40}px`, // 1pt ≈ 1.33px + margem extra
+								border: "1px solid #ccc",
+								borderRadius: "8px",
+							}}
+						/>
+					</div>
+				)}
 				<GeneratePDF
 					onGenerate={handleGeneratePDF}
 					disabled={!pdfFile || generating}
 				/>
+				{outputPdfUrl && pdfDimensions && (
+					<div className="mt-4">
+						<div className="text-xs text-gray-500 mb-1">
+							Pré-visualização do PDF gerado:
+						</div>
+						<iframe
+							title="Pré-visualização do PDF"
+							src={outputPdfUrl}
+							style={{
+								width: "100%",
+								height: `${pdfDimensions.height * 1.33 + 40}px`,
+								border: "1px solid #ccc",
+								borderRadius: "8px",
+							}}
+						/>
+					</div>
+				)}
 			</div>
 			<p className="mt-8 text-xs text-gray-400">
 				Tudo é processado no navegador. Nenhum arquivo é enviado para
