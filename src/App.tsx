@@ -33,6 +33,11 @@ function App() {
 						by Fred!
 					</span>
 					<p className="text-green mb-1 text-center">
+						Faça upload de um arquivo PDF com sua arte e o sistema gera
+						automaticamente uma folha A4 preenchida com várias cópias
+						organizadas para impressão.
+					</p>
+					<p className="text-green mb-1 text-center">
 						Tudo acontece no navegador. Nenhum arquivo é enviado para
 						servidores.
 					</p>
