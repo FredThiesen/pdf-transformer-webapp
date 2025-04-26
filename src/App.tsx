@@ -25,10 +25,13 @@ function App() {
 		<div className="flex flex-col min-h-screen bg-primary">
 			<div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
 				<div className="flex flex-col items-center gap-4 w-full max-w-xl">
-					<h1 className="mb-2 text-6xl text-center font-bold text-white">
-						<span className="text-tertiary">Fred's </span>
-						Gerador de PDF para impressão!
+					<h1 className=" text-6xl text-center font-bold text-white mt-2">
+						Gerador de PDF para impressão{" "}
 					</h1>
+					<span className="mb-2 text-tertiary font-bold text-3xl">
+						{" "}
+						by Fred!
+					</span>
 					<p className="text-green mb-1 text-center">
 						Tudo acontece no navegador. Nenhum arquivo é enviado para
 						servidores.
