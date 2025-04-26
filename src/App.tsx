@@ -54,8 +54,6 @@ function App() {
 							pages={pages}
 							mergedPdfUrl={mergedPdfUrl}
 							individualPdfUrls={individualPdfUrls}
-							onGenerateMerged={() => {}}
-							onGenerateIndividual={() => {}}
 						/>
 					</div>
 				</div>

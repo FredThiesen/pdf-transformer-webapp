@@ -5,8 +5,6 @@ interface PdfActionsProps {
 	pages: PageData[]
 	mergedPdfUrl: string | null
 	individualPdfUrls: string[]
-	onGenerateMerged: () => void
-	onGenerateIndividual: () => void
 }
 
 const PdfActions: React.FC<PdfActionsProps> = ({
