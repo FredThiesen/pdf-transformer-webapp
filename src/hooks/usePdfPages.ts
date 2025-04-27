@@ -31,7 +31,7 @@ export function usePdfPages() {
 		const extractedPages: PageData[] = []
 		for (let pageNum = 1; pageNum <= numPages; pageNum++) {
 			const page = await pdf.getPage(pageNum)
-			const viewport = page.getViewport({ scale: 3 })
+			const viewport = page.getViewport({ scale: 10 })
 			const canvas = document.createElement("canvas")
 			const context = canvas.getContext("2d")!
 			canvas.width = viewport.width
