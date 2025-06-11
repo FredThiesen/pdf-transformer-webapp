@@ -1,15 +1,12 @@
 pipeline {
     agent any
 
-    tools {nodejs "nodejs"}
+    tools { nodejs "nodejs" }
 
     stages {
-        stage('Check Git Repository') {
+        stage('Checkout') {
             steps {
-                sh '''
-                echo "Current directory: $(pwd)"
-                git status || echo "Git repository not found"
-                '''
+                checkout scm
             }
         }
 
@@ -28,6 +25,16 @@ pipeline {
         stage('Build Project') {
             steps {
                 sh 'npm run build'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                    echo "Deploying to transformapdf"
+                    rm -rf /home/ubuntu/transformapdf.ricardothiesen.com.br/dist/*
+                    cp -r dist/* /home/ubuntu/transformapdf.ricardothiesen.com.br/dist/
+                '''
             }
         }
     }
