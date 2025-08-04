@@ -2,6 +2,8 @@ import { GlobalWorkerOptions } from "pdfjs-dist"
 import { usePdfPages } from "./hooks/usePdfPages"
 import PdfUploader from "./components/PdfUploader"
 import PdfActions from "./components/PdfActions"
+import MaxRowsInput from "./components/MaxRowsInput"
+import { useEffect, useState } from "react"
 
 // Worker correto
 GlobalWorkerOptions.workerSrc =
@@ -15,11 +17,24 @@ function App() {
 		extractPages,
 		mergedPdfUrl,
 		individualPdfUrls,
+		generateAllPDFs,
 	} = usePdfPages()
 
+	// Estado para o número máximo de linhas por página A4
+	const [maxRows, setMaxRows] = useState<number | undefined>(undefined)
+
 	const handleFileSelected = (file: File) => {
-		extractPages(file)
+		// Passa o número máximo de linhas para o hook
+		extractPages(file, maxRows)
 	}
+
+	useEffect(() => {
+		if (pages.length > 0) {
+			// Regenera com as novas configurações
+			// Passa o número máximo de linhas para a geração dos PDFs
+			generateAllPDFs(pages, maxRows)
+		}
+	}, [maxRows])
 
 	return (
 		<div className="flex flex-col min-h-screen bg-primary">
@@ -49,6 +64,11 @@ function App() {
 							onFileSelected={handleFileSelected}
 							loading={loading}
 							progress={progress}
+						/>
+						{/* Componente para configurar o número máximo de linhas por página A4 */}
+						<MaxRowsInput
+							value={maxRows}
+							onChange={(n: number | undefined) => setMaxRows(n)}
 						/>
 						<PdfActions
 							pages={pages}
