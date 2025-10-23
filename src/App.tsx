@@ -22,19 +22,21 @@ function App() {
 
 	// Estado para o número máximo de linhas por página A4
 	const [maxRows, setMaxRows] = useState<number | undefined>(undefined)
+	// Novo estado: quando true, monta um A4 com UMA RÉPLICA de cada página do arquivo
+	// alinhadas lado a lado (wrap para próxima linha quando necessário)
+	const [tileAllPagesOnA4, setTileAllPagesOnA4] = useState<boolean>(false)
 
 	const handleFileSelected = (file: File) => {
-		// Passa o número máximo de linhas para o hook
-		extractPages(file, maxRows)
+		// Passa o número máximo de linhas e se deve montar o A4 com todas as páginas
+		extractPages(file, maxRows, tileAllPagesOnA4)
 	}
 
 	useEffect(() => {
 		if (pages.length > 0) {
-			// Regenera com as novas configurações
-			// Passa o número máximo de linhas para a geração dos PDFs
-			generateAllPDFs(pages, maxRows)
+			// Regenera com as novas configurações: maxRows e tileAllPagesOnA4
+			generateAllPDFs(pages, maxRows, tileAllPagesOnA4)
 		}
-	}, [maxRows])
+	}, [maxRows, tileAllPagesOnA4])
 
 	return (
 		<div className="flex flex-col min-h-screen bg-primary">
@@ -65,6 +67,19 @@ function App() {
 							loading={loading}
 							progress={progress}
 						/>
+						{/* Toggle para montar um A4 com uma réplica de cada página do arquivo */}
+						<div className="flex items-center gap-2 text-white">
+							<input
+								type="checkbox"
+								id="tileAll"
+								checked={tileAllPagesOnA4}
+								onChange={(e) => setTileAllPagesOnA4(e.target.checked)}
+								className="w-4 h-4"
+							/>
+							<label htmlFor="tileAll" className="text-sm">
+								Colocar 1 réplica de cada página em A4 (lado a lado)
+							</label>
+						</div>
 						{/* Componente para configurar o número máximo de linhas por página A4 */}
 						<MaxRowsInput
 							value={maxRows}
