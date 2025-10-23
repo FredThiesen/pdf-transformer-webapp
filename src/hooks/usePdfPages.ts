@@ -17,6 +17,7 @@ export function usePdfPages() {
 	})
 	const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null)
 	const [individualPdfUrls, setIndividualPdfUrls] = useState<string[]>([])
+	const [originalFileName, setOriginalFileName] = useState<string | null>(null)
 
 	// Helper to clean up object URLs
 	const cleanupObjectUrls = () => {
@@ -38,6 +39,7 @@ export function usePdfPages() {
 		setPages([])
 		setMergedPdfUrl(null)
 		setIndividualPdfUrls([])
+		setOriginalFileName(file.name)
 
 		const arrayBuffer = await file.arrayBuffer()
 		const pdf = await getDocument({ data: arrayBuffer }).promise
@@ -256,5 +258,6 @@ export function usePdfPages() {
 		mergedPdfUrl,
 		individualPdfUrls,
 		generateAllPDFs,
+		originalFileName,
 	}
 }

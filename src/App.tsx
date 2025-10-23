@@ -18,6 +18,7 @@ function App() {
 		mergedPdfUrl,
 		individualPdfUrls,
 		generateAllPDFs,
+		originalFileName,
 	} = usePdfPages()
 
 	// Estado para o número máximo de linhas por página A4
@@ -89,6 +90,8 @@ function App() {
 							pages={pages}
 							mergedPdfUrl={mergedPdfUrl}
 							individualPdfUrls={individualPdfUrls}
+							// nome original do arquivo para formar nomes de download
+							originalFileName={originalFileName}
 						/>
 					</div>
 				</div>
