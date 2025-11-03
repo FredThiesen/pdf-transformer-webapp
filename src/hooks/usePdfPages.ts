@@ -8,6 +8,22 @@ export interface PageData {
 	height: number
 }
 
+interface GridLayoutParams {
+	pageWidth: number
+	pageHeight: number
+	artWidth: number
+	artHeight: number
+	gap: number
+	maxRows?: number
+}
+
+interface Position {
+	x: number
+	y: number
+	w: number
+	h: number
+}
+
 export function usePdfPages() {
 	const [pages, setPages] = useState<PageData[]>([])
 	const [loading, setLoading] = useState(false)
@@ -25,6 +41,21 @@ export function usePdfPages() {
 			URL.revokeObjectURL(mergedPdfUrl)
 		}
 		individualPdfUrls.forEach((url) => URL.revokeObjectURL(url))
+	}
+
+	function getFittedSize(
+		artW: number,
+		artH: number,
+		pageW: number,
+		pageH: number,
+		gap: number
+	) {
+		const maxW = pageW - gap * 2
+		const maxH = pageH - gap * 2
+		const sW = maxW / artW
+		const sH = maxH / artH
+		const s = Math.min(1, sW, sH) // não aumenta, só reduz
+		return { w: artW * s, h: artH * s }
 	}
 
 	// O parâmetro maxRows agora limita o número de linhas por página A4
@@ -97,25 +128,38 @@ export function usePdfPages() {
 		gap,
 		maxRows,
 	}: GridLayoutParams): Position[] {
-		const cols = Math.floor((pageWidth + gap) / (artWidth + gap))
-		const rowsAvailable = Math.floor((pageHeight + gap) / (artHeight + gap))
+		// 1) ajusta tamanho da arte para caber no A4
+		const fitted = getFittedSize(
+			artWidth,
+			artHeight,
+			pageWidth,
+			pageHeight,
+			gap
+		)
+		const tileW = fitted.w
+		const tileH = fitted.h
+
+		// 2) calcula colunas/linhas garantindo pelo menos 1 de cada
+		const cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
+		const rowsAvailable = Math.max(
+			1,
+			Math.floor((pageHeight + gap) / (tileH + gap))
+		)
 		const rows =
 			maxRows !== undefined ? Math.min(maxRows, rowsAvailable) : rowsAvailable
 
-		// Centraliza horizontalmente, mas alinha no topo verticalmente
-		const adjustedXGap = (pageWidth - cols * artWidth) / (cols + 1)
-		const adjustedYGap = gap // fixo para alinhar no topo
+		// 3) centraliza horizontalmente; alinha no topo verticalmente (gap constante)
+		const adjustedXGap = (pageWidth - cols * tileW) / (cols + 1)
+		const adjustedYGap = gap
 
 		const positions: Position[] = []
-
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
-				const x = adjustedXGap + col * (artWidth + adjustedXGap)
-				const y = adjustedYGap + row * (artHeight + adjustedYGap)
-				positions.push({ x, y })
+				const x = adjustedXGap + col * (tileW + adjustedXGap)
+				const y = adjustedYGap + row * (tileH + adjustedYGap)
+				positions.push({ x, y, w: tileW, h: tileH })
 			}
 		}
-
 		return positions
 	}
 
@@ -135,39 +179,35 @@ export function usePdfPages() {
 		const a4Height = 841.89
 		const gap = 10
 
-		// If requested, create A4 pages that contain ONE replica of each source page
-		// arranged left-to-right, wrapping to next line and adding A4 pages as needed.
 		const mergedPdf = new jsPDF({ unit: "pt", format: "a4" })
 
 		if (tileAllPagesOnA4) {
+			// (mantém sua lógica existente com downscale por largura)
 			let currentX = gap
 			let currentY = gap
 			let rowHeight = 0
 
 			pages.forEach((page, idx) => {
-				// Start new PDF page if first item on a new PDF (except first)
 				if (idx === 0) {
-					// first page already exists
+					/* primeira página já existe */
 				}
 
-				// Determine art dimensions and scale down if wider than A4
-				let artW = page.width
-				let artH = page.height
-				const maxArtW = a4Width - gap * 2
-				if (artW > maxArtW) {
-					const s = maxArtW / artW
-					artW = artW * s
-					artH = artH * s
-				}
+				// usa o mesmo helper para garantir que a peça individual caiba no A4
+				const { w: artW0, h: artH0 } = getFittedSize(
+					page.width,
+					page.height,
+					a4Width,
+					a4Height,
+					gap
+				)
+				let artW = artW0
+				let artH = artH0
 
-				// If it doesn't fit horizontally, wrap to next line
 				if (currentX + artW > a4Width - gap) {
 					currentX = gap
 					currentY += rowHeight + gap
 					rowHeight = 0
 				}
-
-				// If it doesn't fit vertically on current A4, add a new A4 page
 				if (currentY + artH > a4Height - gap) {
 					mergedPdf.addPage()
 					currentX = gap
@@ -175,7 +215,6 @@ export function usePdfPages() {
 					rowHeight = 0
 				}
 
-				// place image
 				mergedPdf.addImage(
 					page.imgDataUrl,
 					"JPEG",
@@ -184,12 +223,11 @@ export function usePdfPages() {
 					artW,
 					artH
 				)
-
 				currentX += artW + gap
 				rowHeight = Math.max(rowHeight, artH)
 			})
 		} else {
-			// original behavior: for each page create a separate A4 with replicated grid
+			// grid replicado por página (AGORA com tamanhos ajustados)
 			pages.forEach((page, index) => {
 				if (index > 0) mergedPdf.addPage()
 
@@ -202,15 +240,8 @@ export function usePdfPages() {
 					maxRows,
 				})
 
-				positions.forEach(({ x, y }) => {
-					mergedPdf.addImage(
-						page.imgDataUrl,
-						"JPEG",
-						x,
-						y,
-						page.width,
-						page.height
-					)
+				positions.forEach(({ x, y, w, h }) => {
+					mergedPdf.addImage(page.imgDataUrl, "JPEG", x, y, w, h)
 				})
 			})
 		}
@@ -220,12 +251,10 @@ export function usePdfPages() {
 		setMergedPdfUrl(mergedUrl)
 
 		if (tileAllPagesOnA4) {
-			// When tiling all pages into A4 we only provide the merged PDF
 			setIndividualPdfUrls([])
 		} else {
-			// Individual PDFs (one per source page using the replicated grid)
+			// PDFs individuais (um por página de origem), também usando tamanhos ajustados
 			const urls: string[] = []
-
 			pages.forEach((page) => {
 				const positions = getReplicatedPositionsInA4Grid({
 					pageWidth: a4Width,
@@ -235,17 +264,13 @@ export function usePdfPages() {
 					gap,
 					maxRows,
 				})
-
 				const pdf = new jsPDF({ unit: "pt", format: "a4" })
-				positions.forEach(({ x, y }) => {
-					pdf.addImage(page.imgDataUrl, "JPEG", x, y, page.width, page.height)
+				positions.forEach(({ x, y, w, h }) => {
+					pdf.addImage(page.imgDataUrl, "JPEG", x, y, w, h)
 				})
-
 				const blob = pdf.output("blob")
-				const url = URL.createObjectURL(blob)
-				urls.push(url)
+				urls.push(URL.createObjectURL(blob))
 			})
-
 			setIndividualPdfUrls(urls)
 		}
 	}
