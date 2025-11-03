@@ -43,7 +43,7 @@ function App() {
 			<div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
 				<div className="flex flex-col items-center gap-4 w-full max-w-xl">
 					<h1 className=" text-6xl text-center font-bold text-white mt-2">
-						Gerador de PDF para impressão{" "}
+						Transforma PDF{" "}
 					</h1>
 					<span className="mb-2 text-tertiary font-bold text-3xl">
 						{" "}
