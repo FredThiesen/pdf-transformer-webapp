@@ -51,16 +51,14 @@ function App() {
 						by Fred!
 					</span>
 					<p className="text-green mb-1 text-center">
-						Faça upload de um arquivo PDF com sua arte e o sistema gera
-						automaticamente uma folha A4 preenchida com várias cópias
-						organizadas para impressão.
+						Transforme sua arte em folhas A4 prontas para imprimir ✂️
 					</p>
 					<p className="text-green mb-1 text-center">
-						Tudo acontece no navegador. Nenhum arquivo é enviado para
-						servidores.
+						Envie seu PDF e gere uma página com várias cópias organizadas
+						automaticamente.
 					</p>
 					<p className="text-tertiary mb-4 text-center">
-						Carregue seu PDF abaixo e faça o download como preferir!
+						🎨 Ideal para tags, cartões, etiquetas e brindes artesanais.
 					</p>
 					<div className="w-full flex flex-col gap-4 items-center">
 						<PdfUploader
@@ -78,14 +76,14 @@ function App() {
 								className="w-4 h-4"
 							/>
 							<label htmlFor="tileAll" className="text-sm">
-								Colocar 1 réplica de cada página em A4 (lado a lado)
+								Quero apenas 1 cópia de cada arte
 							</label>
 						</div>
 						{/* Componente para configurar o número máximo de linhas por página A4 */}
-						<MaxRowsInput
+						{/* <MaxRowsInput
 							value={maxRows}
 							onChange={(n: number | undefined) => setMaxRows(n)}
-						/>
+						/> */}
 						<PdfActions
 							pages={pages}
 							mergedPdfUrl={mergedPdfUrl}
