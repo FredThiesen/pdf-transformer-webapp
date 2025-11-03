@@ -2,7 +2,6 @@ import { GlobalWorkerOptions } from "pdfjs-dist"
 import { usePdfPages } from "./hooks/usePdfPages"
 import PdfUploader from "./components/PdfUploader"
 import PdfActions from "./components/PdfActions"
-import MaxRowsInput from "./components/MaxRowsInput"
 import { useEffect, useState } from "react"
 
 // Worker correto
@@ -22,7 +21,7 @@ function App() {
 	} = usePdfPages()
 
 	// Estado para o número máximo de linhas por página A4
-	const [maxRows, setMaxRows] = useState<number | undefined>(undefined)
+	const [maxRows] = useState<number | undefined>(undefined)
 	// Novo estado: quando true, monta um A4 com UMA RÉPLICA de cada página do arquivo
 	// alinhadas lado a lado (wrap para próxima linha quando necessário)
 	const [tileAllPagesOnA4, setTileAllPagesOnA4] = useState<boolean>(false)
