@@ -2,7 +2,8 @@ import { GlobalWorkerOptions } from "pdfjs-dist"
 import { usePdfPages } from "./hooks/usePdfPages"
 import PdfUploader from "./components/PdfUploader"
 import PdfActions from "./components/PdfActions"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import MaxRowsInput from "./components/MaxRowsInput"
 
 // Worker correto
 GlobalWorkerOptions.workerSrc =
@@ -21,7 +22,7 @@ function App() {
 	} = usePdfPages()
 
 	// Estado para o número máximo de linhas por página A4
-	const [maxRows] = useState<number | undefined>(undefined)
+	const [maxRows, setMaxRows] = useState<number | undefined>(undefined)
 	// Novo estado: quando true, monta um A4 com UMA RÉPLICA de cada página do arquivo
 	// alinhadas lado a lado (wrap para próxima linha quando necessário)
 	const [tileAllPagesOnA4, setTileAllPagesOnA4] = useState<boolean>(false)
@@ -31,12 +32,33 @@ function App() {
 		extractPages(file, maxRows, tileAllPagesOnA4)
 	}
 
+	const hasFile = useMemo(() => originalFileName !== null, [originalFileName])
+
 	useEffect(() => {
 		if (pages.length > 0) {
 			// Regenera com as novas configurações: maxRows e tileAllPagesOnA4
 			generateAllPDFs(pages, maxRows, tileAllPagesOnA4)
 		}
 	}, [maxRows, tileAllPagesOnA4])
+
+	const renderDescription = () => {
+		if (hasFile) return null
+		return (
+			<>
+				<span className="mb-2 text-tertiary font-bold text-3xl"> by Fred!</span>
+				<p className="text-green mb-1 text-center">
+					Transforme sua arte em folhas A4 prontas para imprimir ✂️
+				</p>
+				<p className="text-green mb-1 text-center">
+					Envie seu PDF e gere uma página com várias cópias organizadas
+					automaticamente.
+				</p>
+				<p className="text-tertiary mb-4 text-center">
+					🎨 Ideal para tags, cartões, etiquetas e brindes artesanais.
+				</p>
+			</>
+		)
+	}
 
 	return (
 		<div className="flex flex-col min-h-screen bg-primary">
@@ -45,20 +67,7 @@ function App() {
 					<h1 className=" text-6xl text-center font-bold text-white mt-2">
 						Transforma PDF{" "}
 					</h1>
-					<span className="mb-2 text-tertiary font-bold text-3xl">
-						{" "}
-						by Fred!
-					</span>
-					<p className="text-green mb-1 text-center">
-						Transforme sua arte em folhas A4 prontas para imprimir ✂️
-					</p>
-					<p className="text-green mb-1 text-center">
-						Envie seu PDF e gere uma página com várias cópias organizadas
-						automaticamente.
-					</p>
-					<p className="text-tertiary mb-4 text-center">
-						🎨 Ideal para tags, cartões, etiquetas e brindes artesanais.
-					</p>
+					{renderDescription()}
 					<div className="w-full flex flex-col gap-4 items-center">
 						<PdfUploader
 							onFileSelected={handleFileSelected}
@@ -79,10 +88,10 @@ function App() {
 							</label>
 						</div>
 						{/* Componente para configurar o número máximo de linhas por página A4 */}
-						{/* <MaxRowsInput
+						<MaxRowsInput
 							value={maxRows}
 							onChange={(n: number | undefined) => setMaxRows(n)}
-						/> */}
+						/>
 						<PdfActions
 							pages={pages}
 							mergedPdfUrl={mergedPdfUrl}
