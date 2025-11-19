@@ -8,8 +8,6 @@ export interface PageData {
 	height: number
 }
 
-
-
 export function usePdfPages() {
 	const [pages, setPages] = useState<PageData[]>([])
 	const [loading, setLoading] = useState(false)
