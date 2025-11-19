@@ -60,6 +60,24 @@ function App() {
 		)
 	}
 
+	const renderOneCopyInput = () => {
+		if (!hasFile) return null
+		return (
+			<div className="flex items-center gap-2 text-white">
+				<input
+					type="checkbox"
+					id="tileAll"
+					checked={tileAllPagesOnA4}
+					onChange={(e) => setTileAllPagesOnA4(e.target.checked)}
+					className="w-4 h-4"
+				/>
+				<label htmlFor="tileAll" className="text-sm">
+					Quero apenas 1 cópia de cada arte
+				</label>
+			</div>
+		)
+	}
+
 	return (
 		<div className="flex flex-col min-h-screen bg-primary">
 			<div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
@@ -75,23 +93,14 @@ function App() {
 							progress={progress}
 						/>
 						{/* Toggle para montar um A4 com uma réplica de cada página do arquivo */}
-						<div className="flex items-center gap-2 text-white">
-							<input
-								type="checkbox"
-								id="tileAll"
-								checked={tileAllPagesOnA4}
-								onChange={(e) => setTileAllPagesOnA4(e.target.checked)}
-								className="w-4 h-4"
-							/>
-							<label htmlFor="tileAll" className="text-sm">
-								Quero apenas 1 cópia de cada arte
-							</label>
-						</div>
+						{renderOneCopyInput()}
 						{/* Componente para configurar o número máximo de linhas por página A4 */}
-						<MaxRowsInput
-							value={maxRows}
-							onChange={(n: number | undefined) => setMaxRows(n)}
-						/>
+						{hasFile && (
+							<MaxRowsInput
+								value={maxRows}
+								onChange={(n: number | undefined) => setMaxRows(n)}
+							/>
+						)}
 						<PdfActions
 							pages={pages}
 							mergedPdfUrl={mergedPdfUrl}
