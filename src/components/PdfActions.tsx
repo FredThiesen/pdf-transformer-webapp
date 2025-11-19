@@ -34,26 +34,32 @@ const PdfActions: React.FC<PdfActionsProps> = ({
 		return (
 			<div
 				key={index}
-				className="bg-primary rounded-lg shadow-md border border-white p-4 flex flex-col items-center mb-6 w-full sm:w-1/2 lg:w-1/3"
+				className="bg-primary rounded-xl shadow-lg border border-white p-4 flex flex-col items-stretch transition-shadow hover:shadow-xl"
 			>
-				<div className="font-semibold text-lg mb-2 text-white">
+				<div className="font-semibold text-lg mb-3 text-white text-center">
 					Página {index + 1}
 				</div>
-				<img
-					src={page.imgDataUrl}
-					alt={`Página ${index + 1}`}
-					className="w-full h-48 object-contain rounded-lg mb-4"
-				/>
-				{pages.length > 1 && individualPdfUrls[index] && (
-					<button
-						onClick={() =>
-							handleOpenIndividualPreview(individualPdfUrls[index], index)
-						}
-						className="bg-primary text-white border-2 border-tertiary rounded px-4 py-2 font-medium hover:bg-tertiary hover:text-primary transition"
-					>
-						Visualizar / Baixar esta Página
-					</button>
-				)}
+
+				<div className="w-full mb-4">
+					<img
+						src={page.imgDataUrl}
+						alt={`Página ${index + 1}`}
+						className="w-full h-48 object-contain rounded-md"
+					/>
+				</div>
+
+				<div className="mt-auto flex flex-col items-center gap-3">
+					{pages.length > 1 && individualPdfUrls[index] && (
+						<button
+							onClick={() =>
+								handleOpenIndividualPreview(individualPdfUrls[index], index)
+							}
+							className="bg-primary text-white border-2 border-tertiary rounded px-4 py-2 font-medium hover:bg-tertiary hover:text-primary transition"
+						>
+							Visualizar página
+						</button>
+					)}
+				</div>
 			</div>
 		)
 	}
@@ -66,16 +72,14 @@ const PdfActions: React.FC<PdfActionsProps> = ({
 						onClick={handleOpenMergedPreview}
 						className="bg-tertiary text-primary border-2 border-tertiary rounded-lg px-6 py-2 font-semibold shadow hover:bg-primary/90 hover:text-white transition"
 					>
-						{pages.length === 1
-							? "Visualizar / Baixar PDF"
-							: "Visualizar / Baixar PDF com todas as páginas"}
+						{pages.length === 1 ? "Visualizar" : "Visualizar todas as páginas"}
 					</button>
 				</div>
 			)}
 			<h3 className="text-xl font-bold text-center mb-4 text-white">
 				Arquivo carregado:
 			</h3>
-			<div className="flex flex-wrap gap-6 justify-center">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{pages.map(renderPage)}
 			</div>
 

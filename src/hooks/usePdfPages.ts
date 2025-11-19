@@ -8,21 +8,7 @@ export interface PageData {
 	height: number
 }
 
-interface GridLayoutParams {
-	pageWidth: number
-	pageHeight: number
-	artWidth: number
-	artHeight: number
-	gap: number
-	maxRows?: number
-}
 
-interface Position {
-	x: number
-	y: number
-	w: number
-	h: number
-}
 
 export function usePdfPages() {
 	const [pages, setPages] = useState<PageData[]>([])
@@ -118,6 +104,8 @@ export function usePdfPages() {
 	interface Position {
 		x: number
 		y: number
+		w: number
+		h: number
 	}
 
 	function getReplicatedPositionsInA4Grid({
@@ -227,22 +215,61 @@ export function usePdfPages() {
 				rowHeight = Math.max(rowHeight, artH)
 			})
 		} else {
-			// grid replicado por página (AGORA com tamanhos ajustados)
-			pages.forEach((page, index) => {
-				if (index > 0) mergedPdf.addPage()
+			// grid replicado por página, MAS agora empilhando as artes na mesma folha
+			// respeitando maxRows (máximo de linhas por arte), e só quebrando página
+			// quando acaba o espaço vertical.
 
-				const positions = getReplicatedPositionsInA4Grid({
-					pageWidth: a4Width,
-					pageHeight: a4Height,
-					artWidth: page.width,
-					artHeight: page.height,
-					gap,
-					maxRows,
-				})
+			let currentY = gap // posição vertical atual na página
 
-				positions.forEach(({ x, y, w, h }) => {
-					mergedPdf.addImage(page.imgDataUrl, "JPEG", x, y, w, h)
-				})
+			pages.forEach((page) => {
+				// 1) ajusta tamanho da arte para caber no A4
+				const fitted = getFittedSize(
+					page.width,
+					page.height,
+					a4Width,
+					a4Height,
+					gap
+				)
+				const tileW = fitted.w
+				const tileH = fitted.h
+
+				// 2) calcula quantas colunas cabem
+				const cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
+
+				// 3) calcula quantas linhas cabem por página A4
+				const rowsAvailablePerPage = Math.max(
+					1,
+					Math.floor((a4Height + gap) / (tileH + gap))
+				)
+
+				// 4) para cada arte, respeita o maxRows como limite
+				const rowsForThisArt =
+					maxRows !== undefined
+						? Math.min(maxRows, rowsAvailablePerPage)
+						: rowsAvailablePerPage
+
+				let rowsRemaining = rowsForThisArt
+
+				while (rowsRemaining > 0) {
+					// Se não cabe mais uma linha nessa página, cria nova página
+					if (currentY + tileH > a4Height - gap) {
+						mergedPdf.addPage()
+						currentY = gap
+					}
+
+					// Centraliza horizontalmente os tiles dessa linha
+					const adjustedXGap = (a4Width - cols * tileW) / (cols + 1)
+					const y = currentY
+
+					for (let col = 0; col < cols; col++) {
+						const x = adjustedXGap + col * (tileW + adjustedXGap)
+						mergedPdf.addImage(page.imgDataUrl, "JPEG", x, y, tileW, tileH)
+					}
+
+					// Avança para a próxima linha
+					currentY += tileH + gap
+					rowsRemaining--
+				}
 			})
 		}
 

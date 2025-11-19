@@ -15,7 +15,7 @@ const MaxRowsInput: React.FC<MaxRowsInputProps> = ({ value, onChange }) => {
 	return (
 		<div className="flex flex-col gap-2 p-2">
 			<label htmlFor="maxRows" className="text-sm text-white">
-				Número máximo de linhas por página A4 (opcional):
+				Número máximo de linhas por arte:
 			</label>
 			<input
 				id="maxRows"
