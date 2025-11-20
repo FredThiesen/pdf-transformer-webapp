@@ -168,32 +168,36 @@ export function usePdfPages() {
 		const mergedPdf = new jsPDF({ unit: "pt", format: "a4" })
 
 		if (tileAllPagesOnA4) {
-			// (mantém sua lógica existente com downscale por largura)
+			// Modo "1 cópia de cada arte" — agora colocando uma após a outra na mesma página
 			let currentX = gap
 			let currentY = gap
 			let rowHeight = 0
 
 			pages.forEach((page, idx) => {
 				if (idx === 0) {
-					/* primeira página já existe */
+					// primeira página já existe implicitamente
 				}
 
-				// usa o mesmo helper para garantir que a peça individual caiba no A4
-				const { w: artW0, h: artH0 } = getFittedSize(
-					page.width,
-					page.height,
-					a4Width,
-					a4Height,
-					gap
-				)
-				let artW = artW0
-				let artH = artH0
+				// 🔥 ESCALA DINÂMICA BASEADA NA ALTURA DA ARTE 🔥
+				// Limite máximo de altura para não ocupar a página toda
+				const maxAllowedHeight = a4Height * 0.35
 
+				const scaleWidth = (a4Width - gap * 2) / page.width
+				const scaleHeight = maxAllowedHeight / page.height
+
+				const scale = Math.min(scaleWidth, scaleHeight, 1)
+
+				const artW = page.width * scale
+				const artH = page.height * scale
+
+				// 👉 Wrap horizontal
 				if (currentX + artW > a4Width - gap) {
 					currentX = gap
 					currentY += rowHeight + gap
 					rowHeight = 0
 				}
+
+				// 👉 Wrap vertical → nova página
 				if (currentY + artH > a4Height - gap) {
 					mergedPdf.addPage()
 					currentX = gap
@@ -201,6 +205,7 @@ export function usePdfPages() {
 					rowHeight = 0
 				}
 
+				// Desenha na página
 				mergedPdf.addImage(
 					page.imgDataUrl,
 					"JPEG",
@@ -209,6 +214,8 @@ export function usePdfPages() {
 					artW,
 					artH
 				)
+
+				// Move X e registra altura máxima da linha
 				currentX += artW + gap
 				rowHeight = Math.max(rowHeight, artH)
 			})
