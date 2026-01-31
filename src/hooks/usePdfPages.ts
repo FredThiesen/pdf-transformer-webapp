@@ -123,15 +123,41 @@ export function usePdfPages() {
 			pageHeight,
 			gap,
 		)
-		const tileW = fitted.w
-		const tileH = fitted.h
+		let tileW = fitted.w
+		let tileH = fitted.h
 
 		// 2) calcula colunas/linhas garantindo pelo menos 1 de cada
-		const cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
-		const rowsAvailable = Math.max(
+		let cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
+		let rowsAvailable = Math.max(
 			1,
 			Math.floor((pageHeight + gap) / (tileH + gap)),
 		)
+
+		// Se estiver "quase cabendo", aplica um scale down imperceptível
+		const epsilon = 10
+		const tryCols = cols + 1
+		const tryRows = rowsAvailable + 1
+		const neededW = tryCols * tileW + (tryCols - 1) * gap
+		const neededH = tryRows * tileH + (tryRows - 1) * gap
+		const scaleForCols =
+			neededW > pageWidth && neededW - pageWidth <= epsilon
+				? (pageWidth - (tryCols - 1) * gap) / (tryCols * tileW)
+				: 1
+		const scaleForRows =
+			neededH > pageHeight && neededH - pageHeight <= epsilon
+				? (pageHeight - (tryRows - 1) * gap) / (tryRows * tileH)
+				: 1
+		const microScale = Math.min(scaleForCols, scaleForRows, 1)
+		if (microScale < 1) {
+			tileW *= microScale
+			tileH *= microScale
+			cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
+			rowsAvailable = Math.max(
+				1,
+				Math.floor((pageHeight + gap) / (tileH + gap)),
+			)
+		}
+
 		const rows =
 			maxRows !== undefined ? Math.min(maxRows, rowsAvailable) : rowsAvailable
 
@@ -165,6 +191,9 @@ export function usePdfPages() {
 
 		const a4Width = 595.28
 		const a4Height = 841.89
+		console.log(
+			`[layout] generateAllPDFs pages=${pages.length} maxRows=${maxRows ?? "undefined"} tileAllPagesOnA4=${tileAllPagesOnA4} gap=${gap} a4Width=${a4Width} a4Height=${a4Height}`,
+		)
 
 		const mergedPdf = new jsPDF({ unit: "pt", format: "a4" })
 
@@ -186,6 +215,9 @@ export function usePdfPages() {
 
 				const artW = page.width * scale
 				const artH = page.height * scale
+				console.log(
+					`[layout] tileAllPagesOnA4 item pageIndex=${idx + 1} artW=${artW} artH=${artH} scale=${scale} scaleWidth=${scaleWidth} scaleHeight=${scaleHeight} currentX=${currentX} currentY=${currentY}`,
+				)
 
 				// 👉 Wrap horizontal
 				if (currentX + artW > a4Width) {
@@ -232,16 +264,48 @@ export function usePdfPages() {
 					a4Height,
 					gap,
 				)
-				const tileW = fitted.w
-				const tileH = fitted.h
+				let tileW = fitted.w
+				let tileH = fitted.h
 
-				// 2) calcula quantas colunas cabem
-				const cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
-
-				// 3) calcula quantas linhas cabem por página A4
-				const rowsAvailablePerPage = Math.max(
+				// 2) calcula quantas colunas/linhas cabem
+				let cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
+				let rowsAvailablePerPage = Math.max(
 					1,
 					Math.floor((a4Height + gap) / (tileH + gap)),
+				)
+
+				// Se estiver "quase cabendo", aplica um scale down imperceptível
+				const epsilon = 10
+				const tryCols = cols + 1
+				const tryRows = rowsAvailablePerPage + 1
+				const neededW = tryCols * tileW + (tryCols - 1) * gap
+				const neededH = tryRows * tileH + (tryRows - 1) * gap
+				const scaleForCols =
+					neededW > a4Width && neededW - a4Width <= epsilon
+						? (a4Width - (tryCols - 1) * gap) / (tryCols * tileW)
+						: 1
+				const scaleForRows =
+					neededH > a4Height && neededH - a4Height <= epsilon
+						? (a4Height - (tryRows - 1) * gap) / (tryRows * tileH)
+						: 1
+				const microScale = Math.min(scaleForCols, scaleForRows, 1)
+				if (microScale < 1) {
+					const adjustedTileW = tileW * microScale
+					const adjustedTileH = tileH * microScale
+					console.log(
+						`[layout] microScale applied scale=${microScale} tileW=${tileW} tileH=${tileH} adjustedTileW=${adjustedTileW} adjustedTileH=${adjustedTileH} tryCols=${tryCols} tryRows=${tryRows} epsilon=${epsilon}`,
+					)
+					tileW = adjustedTileW
+					tileH = adjustedTileH
+				}
+
+				cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
+				rowsAvailablePerPage = Math.max(
+					1,
+					Math.floor((a4Height + gap) / (tileH + gap)),
+				)
+				console.log(
+					`[layout] grid calc tileW=${tileW} tileH=${tileH} cols=${cols} rowsAvailablePerPage=${rowsAvailablePerPage} maxRows=${maxRows ?? "undefined"} gap=${gap}`,
 				)
 
 				// 4) para cada arte, respeita o maxRows como limite

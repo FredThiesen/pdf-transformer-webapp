@@ -28,7 +28,7 @@ function App() {
 	// alinhadas lado a lado (wrap para próxima linha quando necessário)
 	const [tileAllPagesOnA4, setTileAllPagesOnA4] = useState<boolean>(false)
 	// Espaçamento (pt) entre as artes
-	const [gap, setGap] = useState<number>(2)
+	const [gap, setGap] = useState<number>(0)
 
 	const handleFileSelected = (file: File) => {
 		// Passa o número máximo de linhas e se deve montar o A4 com todas as páginas

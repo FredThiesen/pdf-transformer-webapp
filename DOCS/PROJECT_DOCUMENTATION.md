@@ -74,6 +74,7 @@ Funções exportadas:
     2. Caso contrário: para cada página de origem, calcula um grid replicado (com `getReplicatedPositionsInA4Grid`) e preenche a página A4 com múltiplas réplicas da mesma arte.
   - Cria blobs via `jsPDF.output("blob")` e armazena URLs via `URL.createObjectURL`.
   - `gap` controla o espaçamento entre artes (e também influencia o wrap).
+  - Aplica micro scale down (tolerância de 10 pt) quando falta pouco para caber mais colunas/linhas.
 
 Helpers internos importantes:
 

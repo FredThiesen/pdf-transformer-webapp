@@ -25,6 +25,7 @@ Lógica central de PDF: extrair páginas, montar layouts A4 e expor URLs para pr
   - Respeita maxRows (máximo de linhas por arte).
   - Cria PDFs individuais usando getReplicatedPositionsInA4Grid.
   - gap controla o espaçamento entre as artes.
+  - Aplica um micro scale down (tolerância de 10 pt) quando falta pouco para caber mais colunas/linhas.
 
 ## Notas para agentes
 - cleanupObjectUrls() deve ser chamado sempre que URLs forem substituídas.
