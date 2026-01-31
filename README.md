@@ -1,54 +1,23 @@
-# React + TypeScript + Vite
+# Transforma PDF
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Resumo (para agentes)
 
-Currently, two official plugins are available:
+- Objetivo: transformar um PDF de artes em folhas A4 prontas para impressão, replicando páginas em grade ou montando uma única A4 com 1 cópia de cada arte.
+- Fluxo principal: upload do PDF → extração das páginas com `pdfjs-dist` → renderização em imagens → geração de PDFs A4 com `jsPDF` → preview e download.
+- Opções do usuário: limitar número máximo de linhas por arte (`maxRows`) e modo “1 cópia de cada arte” (`tileAllPagesOnA4`).
+- Saídas: PDF A4 combinado (todas as páginas) e PDFs individuais por página (desativados no modo “1 cópia”).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Pontos de entrada e arquivos-chave
 
-## Expanding the ESLint configuration
+- UI principal: `src/App.tsx`
+- Lógica de extração e layout: `src/hooks/usePdfPages.ts`
+- Upload e progresso: `src/components/PdfUploader.tsx`
+- Pré-visualização e download: `src/components/PdfActions.tsx`
+- Configuração de linhas: `src/components/MaxRowsInput.tsx`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Comandos úteis
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+- `npm run dev`: ambiente de desenvolvimento (Vite)
+- `npm run build`: build de produção
+- `npm run preview`: preview do build
+- `npm run lint`: lint

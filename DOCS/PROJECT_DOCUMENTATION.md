@@ -1,10 +1,10 @@
-# Documentação do projeto: Transforma PDF
+﻿# Documentação do projeto: Transforma PDF
 
 Última atualização: 18/11/2025
 
 ## Visão geral
 
-"Transforma PDF" é um webapp single-page (React + Vite + TypeScript) cuja finalidade é permitir o upload de um arquivo PDF, extrair cada página como imagem, e gerar PDFs A4 prontos para impressão contendo réplicas das artes organizadas automaticamente em grids ou sequencialmente em folhas A4.
+Transforma PDF é um webapp single-page (React + Vite + TypeScript) cuja finalidade é permitir o upload de um arquivo PDF, extrair cada página como imagem e gerar PDFs A4 prontos para impressão contendo réplicas das artes organizadas automaticamente em grids ou sequencialmente em folhas A4.
 
 Público-alvo: artesãos, designers e pequenos produtores que precisam imprimir tags, cartões, etiquetas e outras artes em folhas A4 com múltiplas cópias por página.
 
@@ -31,7 +31,7 @@ Stack técnico:
     - `PdfActions.tsx` — Exibição de miniaturas, preview embutido e links de download para o PDF mesclado e PDFs individuais.
     - `GeneratePDF.tsx` — Botão simples para acionar geração (reutilizável).
     - `MaxRowsInput.tsx` — Campo numérico para limitar o número de linhas por A4.
-    - `ArteConfig.tsx` — Pequeno controle para configurar tamanho da arte (cm) — não ligado diretamente ao fluxo atual do `App`.
+    - `GapInput.tsx` — Campo numérico para controlar o espaçamento (gap) entre as artes.
 
 ## Fluxo da aplicação
 
@@ -42,7 +42,7 @@ Stack técnico:
    - PDFs individuais por página (quando aplicável) com as réplicas da arte.
 4. `PdfActions` mostra miniaturas das páginas extraídas, botão para abrir preview/baixar o PDF mesclado e botões para visualizar/baixar PDFs individuais.
 
-## Hooks — `usePdfPages` (detalhado)
+## Hooks — usePdfPages (detalhado)
 
 Exportações principais:
 
@@ -57,7 +57,7 @@ Exportações principais:
 
 Funções exportadas:
 
-- `extractPages(file: File, maxRows?: number, tileAllPagesOnA4?: boolean): Promise<void>`
+- `extractPages(file: File, maxRows?: number, tileAllPagesOnA4?: boolean, gap?: number): Promise<void>`
 
   - Lê o PDF como ArrayBuffer e usa `pdfjs-dist` para obter cada página.
   - Renderiza cada página em um canvas com escala fixa (`scale: 6`) e gera DataURL JPEG.
@@ -65,13 +65,15 @@ Funções exportadas:
   - Parâmetros:
     - `maxRows` (opcional): limita o número de linhas do grid por A4.
     - `tileAllPagesOnA4` (opcional): quando `true`, gera um A4 com UMA réplica de cada página (distribuídas sequencialmente com wrap).
+    - `gap` (opcional): espaçamento em pontos (pt) entre artes.
 
-- `generateAllPDFs(pages: PageData[], maxRows?: number, tileAllPagesOnA4?: boolean): void`
+- `generateAllPDFs(pages: PageData[], maxRows?: number, tileAllPagesOnA4?: boolean, gap?: number): void`
   - Gera o PDF mesclado e PDFs individuais no formato A4 (pontos/pt).
   - Estratégias:
     1. `tileAllPagesOnA4 === true`: coloca as artes sequencialmente numa folha A4, empacotando horizontalmente e fazendo wrap para a próxima linha; adiciona novas páginas A4 quando necessário.
     2. Caso contrário: para cada página de origem, calcula um grid replicado (com `getReplicatedPositionsInA4Grid`) e preenche a página A4 com múltiplas réplicas da mesma arte.
   - Cria blobs via `jsPDF.output("blob")` e armazena URLs via `URL.createObjectURL`.
+  - `gap` controla o espaçamento entre artes (e também influencia o wrap).
 
 Helpers internos importantes:
 
@@ -86,14 +88,14 @@ Constantes relevantes:
 Observações sobre robustez:
 
 - O hook já faz revogação de URLs quando gera novos PDFs.
-- Não há currently tratamento de erro explícito (try/catch) em todos os pontos críticos — seria interessante adicionar mensagens de erro e UX adequada.
+- Não há tratamento de erro explícito (try/catch) em todos os pontos críticos — seria interessante adicionar mensagens de erro e UX adequada.
 
 ## Componentes (detalhado)
 
 - `PdfUploader.tsx`
 
   - Props: `onFileSelected(file: File)`, `loading`, `progress`.
-  - Comportamento: input HTML tipo `file` com `accept="application/pdf"`. Quando selecionado, chama `onFileSelected`. Quando `loading=true`, exibe um loader e o texto de progresso (e.g., "Extraindo página X de Y...").
+  - Comportamento: input HTML tipo `file` com `accept="application/pdf"`. Quando selecionado, chama `onFileSelected`. Quando `loading=true`, exibe um loader e o texto de progresso (ex.: "Extraindo página X de Y...").
 
 - `PdfActions.tsx`
 
@@ -114,13 +116,14 @@ Observações sobre robustez:
   - Props: `value: number | undefined`, `onChange: (value: number | undefined) => void`.
   - Transforma a entrada de texto em número ou `undefined` (campo vazio) e passa ao pai.
 
-- `ArteConfig.tsx`
-  - Props: `sizeCm`, `setSizeCm`.
-  - Pequeno controle para ajustar o tamanho da arte em centímetros. No fluxo atual não está ligado, mas é útil para futuras features (por ex., ajustar escala baseada em dimensão física).
+- `GapInput.tsx`
+  - Props: `value: number`, `onChange: (value: number) => void`.
+  - Controla o espaçamento (gap) entre as artes em pontos (pt).
+
 
 ## Como rodar (local)
 
-Pré-requisitos: Node.js ou Bun (o projeto funciona com gerenciadores comuns). As instruções abaixo usam npm e Bun como alternativa.
+Pré-requisitos: Node.js ou Bun. As instruções abaixo usam npm e Bun como alternativa.
 
 Instalar dependências (npm):
 

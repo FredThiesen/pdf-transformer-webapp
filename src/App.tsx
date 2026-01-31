@@ -4,6 +4,7 @@ import PdfUploader from "./components/PdfUploader"
 import PdfActions from "./components/PdfActions"
 import { useEffect, useMemo, useState } from "react"
 import MaxRowsInput from "./components/MaxRowsInput"
+import GapInput from "./components/GapInput"
 
 // Worker correto
 GlobalWorkerOptions.workerSrc =
@@ -26,10 +27,12 @@ function App() {
 	// Novo estado: quando true, monta um A4 com UMA RÉPLICA de cada página do arquivo
 	// alinhadas lado a lado (wrap para próxima linha quando necessário)
 	const [tileAllPagesOnA4, setTileAllPagesOnA4] = useState<boolean>(false)
+	// Espaçamento (pt) entre as artes
+	const [gap, setGap] = useState<number>(2)
 
 	const handleFileSelected = (file: File) => {
 		// Passa o número máximo de linhas e se deve montar o A4 com todas as páginas
-		extractPages(file, maxRows, tileAllPagesOnA4)
+		extractPages(file, maxRows, tileAllPagesOnA4, gap)
 	}
 
 	const hasFile = useMemo(() => originalFileName !== null, [originalFileName])
@@ -37,9 +40,9 @@ function App() {
 	useEffect(() => {
 		if (pages.length > 0) {
 			// Regenera com as novas configurações: maxRows e tileAllPagesOnA4
-			generateAllPDFs(pages, maxRows, tileAllPagesOnA4)
+			generateAllPDFs(pages, maxRows, tileAllPagesOnA4, gap)
 		}
-	}, [maxRows, tileAllPagesOnA4])
+	}, [maxRows, tileAllPagesOnA4, gap])
 
 	const renderDescription = () => {
 		if (hasFile) return null
@@ -96,10 +99,13 @@ function App() {
 						{renderOneCopyInput()}
 						{/* Componente para configurar o número máximo de linhas por página A4 */}
 						{hasFile && (
-							<MaxRowsInput
-								value={maxRows}
-								onChange={(n: number | undefined) => setMaxRows(n)}
-							/>
+							<>
+								<MaxRowsInput
+									value={maxRows}
+									onChange={(n: number | undefined) => setMaxRows(n)}
+								/>
+								<GapInput value={gap} onChange={setGap} />
+							</>
 						)}
 						<PdfActions
 							pages={pages}

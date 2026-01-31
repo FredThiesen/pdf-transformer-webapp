@@ -32,10 +32,10 @@ export function usePdfPages() {
 		artH: number,
 		pageW: number,
 		pageH: number,
-		gap: number
+		gap: number,
 	) {
-		const maxW = pageW - gap * 2
-		const maxH = pageH - gap * 2
+		const maxW = pageW
+		const maxH = pageH
 		const sW = maxW / artW
 		const sH = maxH / artH
 		const s = Math.min(1, sW, sH) // não aumenta, só reduz
@@ -46,7 +46,8 @@ export function usePdfPages() {
 	const extractPages = async (
 		file: File,
 		maxRows?: number,
-		tileAllPagesOnA4?: boolean
+		tileAllPagesOnA4?: boolean,
+		gap: number = 2,
 	) => {
 		cleanupObjectUrls()
 		setLoading(true)
@@ -84,7 +85,7 @@ export function usePdfPages() {
 		}
 
 		setPages(extractedPages)
-		generateAllPDFs(extractedPages, maxRows, tileAllPagesOnA4)
+		generateAllPDFs(extractedPages, maxRows, tileAllPagesOnA4, gap)
 		setLoading(false)
 	}
 
@@ -120,7 +121,7 @@ export function usePdfPages() {
 			artHeight,
 			pageWidth,
 			pageHeight,
-			gap
+			gap,
 		)
 		const tileW = fitted.w
 		const tileH = fitted.h
@@ -129,20 +130,20 @@ export function usePdfPages() {
 		const cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
 		const rowsAvailable = Math.max(
 			1,
-			Math.floor((pageHeight + gap) / (tileH + gap))
+			Math.floor((pageHeight + gap) / (tileH + gap)),
 		)
 		const rows =
 			maxRows !== undefined ? Math.min(maxRows, rowsAvailable) : rowsAvailable
 
-		// 3) centraliza horizontalmente; alinha no topo verticalmente (gap constante)
-		const adjustedXGap = (pageWidth - cols * tileW) / (cols + 1)
+		// 3) sem margens externas; apenas gap entre artes
+		const adjustedXGap = gap
 		const adjustedYGap = gap
 
 		const positions: Position[] = []
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
-				const x = adjustedXGap + col * (tileW + adjustedXGap)
-				const y = adjustedYGap + row * (tileH + adjustedYGap)
+				const x = col * (tileW + adjustedXGap)
+				const y = row * (tileH + adjustedYGap)
 				positions.push({ x, y, w: tileW, h: tileH })
 			}
 		}
@@ -152,7 +153,8 @@ export function usePdfPages() {
 	const generateAllPDFs = (
 		pages: PageData[],
 		maxRows?: number,
-		tileAllPagesOnA4?: boolean
+		tileAllPagesOnA4?: boolean,
+		gap: number = 2,
 	) => {
 		cleanupObjectUrls()
 		if (pages.length === 0) {
@@ -163,14 +165,13 @@ export function usePdfPages() {
 
 		const a4Width = 595.28
 		const a4Height = 841.89
-		const gap = 10
 
 		const mergedPdf = new jsPDF({ unit: "pt", format: "a4" })
 
 		if (tileAllPagesOnA4) {
 			// Modo "1 cópia de cada arte" — agora colocando uma após a outra na mesma página
-			let currentX = gap
-			let currentY = gap
+			let currentX = 0
+			let currentY = 0
 			let rowHeight = 0
 
 			pages.forEach((page, idx) => {
@@ -178,12 +179,8 @@ export function usePdfPages() {
 					// primeira página já existe implicitamente
 				}
 
-				// 🔥 ESCALA DINÂMICA BASEADA NA ALTURA DA ARTE 🔥
-				// Limite máximo de altura para não ocupar a página toda
-				const maxAllowedHeight = a4Height * 0.35
-
-				const scaleWidth = (a4Width - gap * 2) / page.width
-				const scaleHeight = maxAllowedHeight / page.height
+				const scaleWidth = a4Width / page.width
+				const scaleHeight = a4Height / page.height
 
 				const scale = Math.min(scaleWidth, scaleHeight, 1)
 
@@ -191,17 +188,17 @@ export function usePdfPages() {
 				const artH = page.height * scale
 
 				// 👉 Wrap horizontal
-				if (currentX + artW > a4Width - gap) {
-					currentX = gap
+				if (currentX + artW > a4Width) {
+					currentX = 0
 					currentY += rowHeight + gap
 					rowHeight = 0
 				}
 
 				// 👉 Wrap vertical → nova página
-				if (currentY + artH > a4Height - gap) {
+				if (currentY + artH > a4Height) {
 					mergedPdf.addPage()
-					currentX = gap
-					currentY = gap
+					currentX = 0
+					currentY = 0
 					rowHeight = 0
 				}
 
@@ -212,7 +209,7 @@ export function usePdfPages() {
 					currentX,
 					currentY,
 					artW,
-					artH
+					artH,
 				)
 
 				// Move X e registra altura máxima da linha
@@ -224,7 +221,7 @@ export function usePdfPages() {
 			// respeitando maxRows (máximo de linhas por arte), e só quebrando página
 			// quando acaba o espaço vertical.
 
-			let currentY = gap // posição vertical atual na página
+			let currentY = 0 // posição vertical atual na página
 
 			pages.forEach((page) => {
 				// 1) ajusta tamanho da arte para caber no A4
@@ -233,7 +230,7 @@ export function usePdfPages() {
 					page.height,
 					a4Width,
 					a4Height,
-					gap
+					gap,
 				)
 				const tileW = fitted.w
 				const tileH = fitted.h
@@ -244,7 +241,7 @@ export function usePdfPages() {
 				// 3) calcula quantas linhas cabem por página A4
 				const rowsAvailablePerPage = Math.max(
 					1,
-					Math.floor((a4Height + gap) / (tileH + gap))
+					Math.floor((a4Height + gap) / (tileH + gap)),
 				)
 
 				// 4) para cada arte, respeita o maxRows como limite
@@ -257,17 +254,17 @@ export function usePdfPages() {
 
 				while (rowsRemaining > 0) {
 					// Se não cabe mais uma linha nessa página, cria nova página
-					if (currentY + tileH > a4Height - gap) {
+					if (currentY + tileH > a4Height) {
 						mergedPdf.addPage()
-						currentY = gap
+						currentY = 0
 					}
 
-					// Centraliza horizontalmente os tiles dessa linha
-					const adjustedXGap = (a4Width - cols * tileW) / (cols + 1)
+					// Sem margens externas, apenas gap entre tiles
+					const adjustedXGap = gap
 					const y = currentY
 
 					for (let col = 0; col < cols; col++) {
-						const x = adjustedXGap + col * (tileW + adjustedXGap)
+						const x = col * (tileW + adjustedXGap)
 						mergedPdf.addImage(page.imgDataUrl, "JPEG", x, y, tileW, tileH)
 					}
 
