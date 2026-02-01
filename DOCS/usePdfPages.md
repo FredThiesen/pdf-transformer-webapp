@@ -30,3 +30,4 @@ Lógica central de PDF: extrair páginas, montar layouts A4 e expor URLs para pr
 ## Notas para agentes
 - cleanupObjectUrls() deve ser chamado sempre que URLs forem substituídas.
 - Se alterar tamanhos/gaps, atualize os helpers e os loops de layout.
+- Cálculos de fit/grid ficam em `src/utils/artUtils.ts`.

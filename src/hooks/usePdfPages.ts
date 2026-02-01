@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { getDocument } from "pdfjs-dist"
 import { jsPDF } from "jspdf"
+import { computeGridLayout, getFittedSize } from "../utils/artUtils"
 
 export interface PageData {
 	imgDataUrl: string
@@ -27,20 +28,6 @@ export function usePdfPages() {
 		individualPdfUrls.forEach((url) => URL.revokeObjectURL(url))
 	}
 
-	function getFittedSize(
-		artW: number,
-		artH: number,
-		pageW: number,
-		pageH: number,
-		gap: number,
-	) {
-		const maxW = pageW
-		const maxH = pageH
-		const sW = maxW / artW
-		const sH = maxH / artH
-		const s = Math.min(1, sW, sH) // não aumenta, só reduz
-		return { w: artW * s, h: artH * s }
-	}
 
 	// O parâmetro maxRows agora limita o número de linhas por página A4
 	const extractPages = async (
@@ -123,41 +110,18 @@ export function usePdfPages() {
 			pageHeight,
 			gap,
 		)
-		let tileW = fitted.w
-		let tileH = fitted.h
-
-		// 2) calcula colunas/linhas garantindo pelo menos 1 de cada
-		let cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
-		let rowsAvailable = Math.max(
-			1,
-			Math.floor((pageHeight + gap) / (tileH + gap)),
-		)
-
-		// Se estiver "quase cabendo", aplica um scale down imperceptível
-		const epsilon = 10
-		const tryCols = cols + 1
-		const tryRows = rowsAvailable + 1
-		const neededW = tryCols * tileW + (tryCols - 1) * gap
-		const neededH = tryRows * tileH + (tryRows - 1) * gap
-		const scaleForCols =
-			neededW > pageWidth && neededW - pageWidth <= epsilon
-				? (pageWidth - (tryCols - 1) * gap) / (tryCols * tileW)
-				: 1
-		const scaleForRows =
-			neededH > pageHeight && neededH - pageHeight <= epsilon
-				? (pageHeight - (tryRows - 1) * gap) / (tryRows * tileH)
-				: 1
-		const microScale = Math.min(scaleForCols, scaleForRows, 1)
-		if (microScale < 1) {
-			tileW *= microScale
-			tileH *= microScale
-			cols = Math.max(1, Math.floor((pageWidth + gap) / (tileW + gap)))
-			rowsAvailable = Math.max(
-				1,
-				Math.floor((pageHeight + gap) / (tileH + gap)),
-			)
-		}
-
+		const grid = computeGridLayout({
+			tileW: fitted.w,
+			tileH: fitted.h,
+			pageW: pageWidth,
+			pageH: pageHeight,
+			gap,
+			epsilon: 10,
+		})
+		const tileW = grid.tileW
+		const tileH = grid.tileH
+		const cols = grid.cols
+		const rowsAvailable = grid.rowsAvailable
 		const rows =
 			maxRows !== undefined ? Math.min(maxRows, rowsAvailable) : rowsAvailable
 
@@ -264,46 +228,18 @@ export function usePdfPages() {
 					a4Height,
 					gap,
 				)
-				let tileW = fitted.w
-				let tileH = fitted.h
-
-				// 2) calcula quantas colunas/linhas cabem
-				let cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
-				let rowsAvailablePerPage = Math.max(
-					1,
-					Math.floor((a4Height + gap) / (tileH + gap)),
-				)
-
-				// Se estiver "quase cabendo", aplica um scale down imperceptível
-				const epsilon = 10
-				const tryCols = cols + 1
-				const tryRows = rowsAvailablePerPage + 1
-				const neededW = tryCols * tileW + (tryCols - 1) * gap
-				const neededH = tryRows * tileH + (tryRows - 1) * gap
-				const scaleForCols =
-					neededW > a4Width && neededW - a4Width <= epsilon
-						? (a4Width - (tryCols - 1) * gap) / (tryCols * tileW)
-						: 1
-				const scaleForRows =
-					neededH > a4Height && neededH - a4Height <= epsilon
-						? (a4Height - (tryRows - 1) * gap) / (tryRows * tileH)
-						: 1
-				const microScale = Math.min(scaleForCols, scaleForRows, 1)
-				if (microScale < 1) {
-					const adjustedTileW = tileW * microScale
-					const adjustedTileH = tileH * microScale
-					console.log(
-						`[layout] microScale applied scale=${microScale} tileW=${tileW} tileH=${tileH} adjustedTileW=${adjustedTileW} adjustedTileH=${adjustedTileH} tryCols=${tryCols} tryRows=${tryRows} epsilon=${epsilon}`,
-					)
-					tileW = adjustedTileW
-					tileH = adjustedTileH
-				}
-
-				cols = Math.max(1, Math.floor((a4Width + gap) / (tileW + gap)))
-				rowsAvailablePerPage = Math.max(
-					1,
-					Math.floor((a4Height + gap) / (tileH + gap)),
-				)
+				const grid = computeGridLayout({
+					tileW: fitted.w,
+					tileH: fitted.h,
+					pageW: a4Width,
+					pageH: a4Height,
+					gap,
+					epsilon: 10,
+				})
+				const tileW = grid.tileW
+				const tileH = grid.tileH
+				const cols = grid.cols
+				const rowsAvailablePerPage = grid.rowsAvailable
 				console.log(
 					`[layout] grid calc tileW=${tileW} tileH=${tileH} cols=${cols} rowsAvailablePerPage=${rowsAvailablePerPage} maxRows=${maxRows ?? "undefined"} gap=${gap}`,
 				)

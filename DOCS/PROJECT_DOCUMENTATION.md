@@ -24,6 +24,8 @@ Stack técnico:
   - `index.css` — Importa Tailwind e define variáveis de tema.
   - `vite-env.d.ts` — Tipos Vite para o TypeScript.
   - `assets/` — Recursos estáticos (ex.: `react.svg`, `favicon.png`).
+  - `utils/`
+    - `artUtils.ts` — Funções de fit e cálculo de grid (inclui micro scale down).
   - `hooks/`
     - `usePdfPages.ts` — Hook central: extrai páginas, gera PDFs, mantém estados e URLs de blobs.
   - `components/`
