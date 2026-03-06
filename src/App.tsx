@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react"
 import MaxRowsInput from "./components/MaxRowsInput"
 import GapInput from "./components/GapInput"
 
+const HORIZONTAL_MARGIN_PT = 8
+
 // Worker correto
 GlobalWorkerOptions.workerSrc =
 	"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"
@@ -32,7 +34,7 @@ function App() {
 
 	const handleFileSelected = (file: File) => {
 		// Passa o número máximo de linhas e se deve montar o A4 com todas as páginas
-		extractPages(file, maxRows, tileAllPagesOnA4, gap)
+		extractPages(file, maxRows, tileAllPagesOnA4, gap, HORIZONTAL_MARGIN_PT, 0)
 	}
 
 	const hasFile = useMemo(() => originalFileName !== null, [originalFileName])
@@ -40,7 +42,14 @@ function App() {
 	useEffect(() => {
 		if (pages.length > 0) {
 			// Regenera com as novas configurações: maxRows e tileAllPagesOnA4
-			generateAllPDFs(pages, maxRows, tileAllPagesOnA4, gap)
+			generateAllPDFs(
+				pages,
+				maxRows,
+				tileAllPagesOnA4,
+				gap,
+				HORIZONTAL_MARGIN_PT,
+				0,
+			)
 		}
 	}, [maxRows, tileAllPagesOnA4, gap])
 

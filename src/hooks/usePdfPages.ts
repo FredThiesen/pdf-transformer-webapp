@@ -35,6 +35,8 @@ export function usePdfPages() {
 		maxRows?: number,
 		tileAllPagesOnA4?: boolean,
 		gap: number = 2,
+		outerMarginXPt?: number,
+		outerMarginYPt?: number,
 	) => {
 		cleanupObjectUrls()
 		setLoading(true)
@@ -72,7 +74,14 @@ export function usePdfPages() {
 		}
 
 		setPages(extractedPages)
-		generateAllPDFs(extractedPages, maxRows, tileAllPagesOnA4, gap)
+		generateAllPDFs(
+			extractedPages,
+			maxRows,
+			tileAllPagesOnA4,
+			gap,
+			outerMarginXPt,
+			outerMarginYPt,
+		)
 		setLoading(false)
 	}
 
@@ -84,15 +93,33 @@ export function usePdfPages() {
 		artWidth: number
 		artHeight: number
 		gap: number
+		outerMarginXPt?: number
+		outerMarginYPt?: number
 		maxRows?: number
 	}
 
-	interface Position {
-		x: number
-		y: number
-		w: number
-		h: number
+interface Position {
+	x: number
+	y: number
+	w: number
+	h: number
+}
+
+const getUsableArea = (
+	pageW: number,
+	pageH: number,
+	outerMarginX: number,
+	outerMarginY: number,
+) => {
+	const safeOuterMarginX = Math.max(0, outerMarginX)
+	const safeOuterMarginY = Math.max(0, outerMarginY)
+	return {
+		outerMarginX: safeOuterMarginX,
+		outerMarginY: safeOuterMarginY,
+		usableW: Math.max(1, pageW - safeOuterMarginX * 2),
+		usableH: Math.max(1, pageH - safeOuterMarginY * 2),
 	}
+}
 
 	function getReplicatedPositionsInA4Grid({
 		pageWidth,
@@ -100,21 +127,32 @@ export function usePdfPages() {
 		artWidth,
 		artHeight,
 		gap,
+		outerMarginXPt,
+		outerMarginYPt,
 		maxRows,
 	}: GridLayoutParams): Position[] {
+		const effectiveOuterMarginX = outerMarginXPt ?? 0
+		const effectiveOuterMarginY = outerMarginYPt ?? 0
+		const { outerMarginX, outerMarginY, usableW, usableH } = getUsableArea(
+			pageWidth,
+			pageHeight,
+			effectiveOuterMarginX,
+			effectiveOuterMarginY,
+		)
+
 		// 1) ajusta tamanho da arte para caber no A4
 		const fitted = getFittedSize(
 			artWidth,
 			artHeight,
-			pageWidth,
-			pageHeight,
+			usableW,
+			usableH,
 			gap,
 		)
 		const grid = computeGridLayout({
 			tileW: fitted.w,
 			tileH: fitted.h,
-			pageW: pageWidth,
-			pageH: pageHeight,
+			pageW: usableW,
+			pageH: usableH,
 			gap,
 			epsilon: 10,
 		})
@@ -132,8 +170,8 @@ export function usePdfPages() {
 		const positions: Position[] = []
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
-				const x = col * (tileW + adjustedXGap)
-				const y = row * (tileH + adjustedYGap)
+				const x = outerMarginX + col * (tileW + adjustedXGap)
+				const y = outerMarginY + row * (tileH + adjustedYGap)
 				positions.push({ x, y, w: tileW, h: tileH })
 			}
 		}
@@ -145,6 +183,8 @@ export function usePdfPages() {
 		maxRows?: number,
 		tileAllPagesOnA4?: boolean,
 		gap: number = 2,
+		outerMarginXPt?: number,
+		outerMarginYPt?: number,
 	) => {
 		cleanupObjectUrls()
 		if (pages.length === 0) {
@@ -155,16 +195,24 @@ export function usePdfPages() {
 
 		const a4Width = 595.28
 		const a4Height = 841.89
+		const effectiveOuterMarginX = outerMarginXPt ?? 0
+		const effectiveOuterMarginY = outerMarginYPt ?? 0
+		const { outerMarginX, outerMarginY, usableW, usableH } = getUsableArea(
+			a4Width,
+			a4Height,
+			effectiveOuterMarginX,
+			effectiveOuterMarginY,
+		)
 		console.log(
-			`[layout] generateAllPDFs pages=${pages.length} maxRows=${maxRows ?? "undefined"} tileAllPagesOnA4=${tileAllPagesOnA4} gap=${gap} a4Width=${a4Width} a4Height=${a4Height}`,
+			`[layout] generateAllPDFs pages=${pages.length} maxRows=${maxRows ?? "undefined"} tileAllPagesOnA4=${tileAllPagesOnA4} gap=${gap} outerMarginX=${effectiveOuterMarginX} outerMarginY=${effectiveOuterMarginY} a4Width=${a4Width} a4Height=${a4Height}`,
 		)
 
 		const mergedPdf = new jsPDF({ unit: "pt", format: "a4" })
 
 		if (tileAllPagesOnA4) {
 			// Modo "1 cópia de cada arte" — agora colocando uma após a outra na mesma página
-			let currentX = 0
-			let currentY = 0
+			let currentX = outerMarginX
+			let currentY = outerMarginY
 			let rowHeight = 0
 
 			pages.forEach((page, idx) => {
@@ -172,8 +220,8 @@ export function usePdfPages() {
 					// primeira página já existe implicitamente
 				}
 
-				const scaleWidth = a4Width / page.width
-				const scaleHeight = a4Height / page.height
+				const scaleWidth = usableW / page.width
+				const scaleHeight = usableH / page.height
 
 				const scale = Math.min(scaleWidth, scaleHeight, 1)
 
@@ -184,17 +232,17 @@ export function usePdfPages() {
 				)
 
 				// 👉 Wrap horizontal
-				if (currentX + artW > a4Width) {
-					currentX = 0
+				if (currentX + artW > a4Width - outerMarginX) {
+					currentX = outerMarginX
 					currentY += rowHeight + gap
 					rowHeight = 0
 				}
 
 				// 👉 Wrap vertical → nova página
-				if (currentY + artH > a4Height) {
+				if (currentY + artH > a4Height - outerMarginY) {
 					mergedPdf.addPage()
-					currentX = 0
-					currentY = 0
+					currentX = outerMarginX
+					currentY = outerMarginY
 					rowHeight = 0
 				}
 
@@ -217,22 +265,22 @@ export function usePdfPages() {
 			// respeitando maxRows (máximo de linhas por arte), e só quebrando página
 			// quando acaba o espaço vertical.
 
-			let currentY = 0 // posição vertical atual na página
+			let currentY = outerMarginY // posição vertical atual na página
 
 			pages.forEach((page) => {
 				// 1) ajusta tamanho da arte para caber no A4
 				const fitted = getFittedSize(
 					page.width,
 					page.height,
-					a4Width,
-					a4Height,
+					usableW,
+					usableH,
 					gap,
 				)
 				const grid = computeGridLayout({
 					tileW: fitted.w,
 					tileH: fitted.h,
-					pageW: a4Width,
-					pageH: a4Height,
+					pageW: usableW,
+					pageH: usableH,
 					gap,
 					epsilon: 10,
 				})
@@ -254,9 +302,9 @@ export function usePdfPages() {
 
 				while (rowsRemaining > 0) {
 					// Se não cabe mais uma linha nessa página, cria nova página
-					if (currentY + tileH > a4Height) {
+					if (currentY + tileH > a4Height - outerMarginY) {
 						mergedPdf.addPage()
-						currentY = 0
+						currentY = outerMarginY
 					}
 
 					// Sem margens externas, apenas gap entre tiles
@@ -264,7 +312,7 @@ export function usePdfPages() {
 					const y = currentY
 
 					for (let col = 0; col < cols; col++) {
-						const x = col * (tileW + adjustedXGap)
+						const x = outerMarginX + col * (tileW + adjustedXGap)
 						mergedPdf.addImage(page.imgDataUrl, "JPEG", x, y, tileW, tileH)
 					}
 
@@ -285,14 +333,16 @@ export function usePdfPages() {
 			// PDFs individuais (um por página de origem), também usando tamanhos ajustados
 			const urls: string[] = []
 			pages.forEach((page) => {
-				const positions = getReplicatedPositionsInA4Grid({
-					pageWidth: a4Width,
-					pageHeight: a4Height,
-					artWidth: page.width,
-					artHeight: page.height,
-					gap,
-					maxRows,
-				})
+					const positions = getReplicatedPositionsInA4Grid({
+						pageWidth: a4Width,
+						pageHeight: a4Height,
+						artWidth: page.width,
+						artHeight: page.height,
+						gap,
+						outerMarginXPt: effectiveOuterMarginX,
+						outerMarginYPt: effectiveOuterMarginY,
+						maxRows,
+					})
 				const pdf = new jsPDF({ unit: "pt", format: "a4" })
 				positions.forEach(({ x, y, w, h }) => {
 					pdf.addImage(page.imgDataUrl, "JPEG", x, y, w, h)
