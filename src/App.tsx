@@ -7,6 +7,7 @@ import MaxRowsInput from "./components/MaxRowsInput"
 import GapInput from "./components/GapInput"
 
 const HORIZONTAL_MARGIN_PT = 8
+const VERTICAL_MARGIN_PT = 8
 
 // Worker correto
 GlobalWorkerOptions.workerSrc =
@@ -34,7 +35,14 @@ function App() {
 
 	const handleFileSelected = (file: File) => {
 		// Passa o número máximo de linhas e se deve montar o A4 com todas as páginas
-		extractPages(file, maxRows, tileAllPagesOnA4, gap, HORIZONTAL_MARGIN_PT, 0)
+		extractPages(
+			file,
+			maxRows,
+			tileAllPagesOnA4,
+			gap,
+			HORIZONTAL_MARGIN_PT,
+			VERTICAL_MARGIN_PT,
+		)
 	}
 
 	const hasFile = useMemo(() => originalFileName !== null, [originalFileName])
@@ -48,7 +56,7 @@ function App() {
 				tileAllPagesOnA4,
 				gap,
 				HORIZONTAL_MARGIN_PT,
-				0,
+				VERTICAL_MARGIN_PT,
 			)
 		}
 	}, [maxRows, tileAllPagesOnA4, gap])
