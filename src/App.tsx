@@ -1,4 +1,5 @@
 import { GlobalWorkerOptions } from "pdfjs-dist"
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.js?url"
 import { usePdfPages } from "./hooks/usePdfPages"
 import PdfUploader from "./components/PdfUploader"
 import PdfActions from "./components/PdfActions"
@@ -9,9 +10,8 @@ import GapInput from "./components/GapInput"
 const HORIZONTAL_MARGIN_PT = 8
 const VERTICAL_MARGIN_PT = 8
 
-// Worker correto
-GlobalWorkerOptions.workerSrc =
-	"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"
+// Worker servido junto com o bundle, na mesma versao do pdfjs-dist instalado
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 function App() {
 	const {

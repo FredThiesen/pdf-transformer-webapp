@@ -21,3 +21,9 @@
 - `npm run build`: build de produção
 - `npm run preview`: preview do build
 - `npm run lint`: lint
+
+## Deploy
+
+- Publicado em `https://transformapdf.ricardothiesen.com.br`, no Coolify do homelab (`build_pack=dockerfile`, porta 80).
+- O `Dockerfile` faz o build com Node e serve o `dist` com nginx (`nginx.conf`).
+- O push na `main` não dispara deploy sozinho: dispare pelo painel do Coolify.
